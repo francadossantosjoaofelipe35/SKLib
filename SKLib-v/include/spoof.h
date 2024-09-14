@@ -6,8 +6,6 @@
 #include "nicspoof.h"
 #include "smbiosspoof.h"
 #include "gpuspoof.h"
-#include "efispoof.h"
-#include "wmispoof.h"
 #include "usbspoof.h"
 
 namespace spoofer {
