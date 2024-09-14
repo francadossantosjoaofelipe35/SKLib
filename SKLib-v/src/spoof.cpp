@@ -21,11 +21,6 @@ NTSTATUS spoofer::SpoofAll(DWORD64 _seed)
 		DbgMsg("[SPOOFER] Failed nics");
 		return STATUS_FAILED_NICS_SPOOF;
 	}
-	bSuccessful &= wmi::SpoofMonitor(_seed);
-	if (!bSuccessful) {
-		DbgMsg("[SPOOFER] Failed monitors");
-		return STATUS_FAILED_MONITOR_SPOOF;
-	}
 	bSuccessful &= usb::Spoof(_seed);
 	if (!bSuccessful) {
 		DbgMsg("[SPOOFER] Failed usb");
@@ -35,11 +30,6 @@ NTSTATUS spoofer::SpoofAll(DWORD64 _seed)
 	if (!bSuccessful) {
 		DbgMsg("[SPOOFER] Failed smbios");
 		return STATUS_FAILED_SMBIOS_SPOOF;
-	}
-	bSuccessful &= efi::Spoof(_seed);
-	if (!bSuccessful) {
-		DbgMsg("[SPOOFER] Failed efi");
-		return STATUS_FAILED_EFI_SPOOF;
 	}
 	bSuccessful &= gpu::Spoof(_seed);
 	if (!bSuccessful) {
