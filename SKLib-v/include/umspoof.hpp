@@ -291,11 +291,6 @@ namespace spoofer {
 		//	spoofThread.detach();
 		//}
 
-		{
-			std::thread spoofThread(ExtraCleanup);
-			spoofThread.detach();
-		}
-
 		//{
 		//	std::thread spoofThread(SpoofDisplays);
 		//	spoofThread.detach();
@@ -307,27 +302,7 @@ namespace spoofer {
 		}
 
 		{
-			std::thread spoofThread(SpoofSMBIOS);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofMB);
-			spoofThread.detach();
-		}
-
-		{
 			std::thread spoofThread(SpoofNVIDIA);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofMisc);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofDisks);
 			spoofThread.detach();
 		}
 
