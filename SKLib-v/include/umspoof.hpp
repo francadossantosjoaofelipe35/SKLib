@@ -17,15 +17,24 @@ namespace spoofer {
 	}
 
 	__forceinline void ExtraCleanup() {
-		system("vssadmin delete shadows /All /Quiet");
-
-		system("net stop winmgmt /Y");
-		system("ipconfig /flushdns");
-		system("certutil -URLCache * delete");
-
-		system("taskkill /F /IM WmiPrvSE.exe /T");
-		system("powershell -c \"Reset-PhysicalDisk *\"");
-		system("getmac /v");
+		// Handle to the console
+	    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	
+	    // Check if the handle is valid
+	    if (hConsole == INVALID_HANDLE_VALUE) {
+	        std::cerr << "Error: Unable to get console handle." << std::endl;
+	        return;
+	    }
+	
+	    // Set the text color to dark blue
+	    // 0x01 represents dark blue color in Windows Console
+	    SetConsoleTextAttribute(hConsole, 0x01);
+	
+	    // Print the message
+	    std::cout << "The virtualization was loaded successfully..., making some more adjustments!" << std::endl;
+	
+	    // Reset text color to default (usually gray on black)
+	    SetConsoleTextAttribute(hConsole, 0x07);
 	}
 
 	__forceinline void SpoofDisplays() {
@@ -301,11 +310,6 @@ namespace spoofer {
 		//	std::thread spoofThread(SpoofDisplays);
 		//	spoofThread.detach();
 		//}
-
-		{
-			std::thread spoofThread(ExtraCleanup);
-			spoofThread.detach();
-		}
 		
 		{
 			std::thread spoofThread(SpoofNICs);
@@ -324,21 +328,6 @@ namespace spoofer {
 
 		{
 			std::thread spoofThread(SpoofNVIDIA);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofMisc);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofDisks);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofUEFI);
 			spoofThread.detach();
 		}
 
