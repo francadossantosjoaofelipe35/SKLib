@@ -124,15 +124,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ddma.h" />
-    <ClInclude Include="include\EPT.h" />
-    <ClInclude Include="include\event.h" />
-    <ClInclude Include="include\smbiosspoof.h" />
     <ClInclude Include="include\diskspoof.h" />
     <ClInclude Include="include\efispoof.h" />
+    <ClInclude Include="include\EPT.h" />
+    <ClInclude Include="include\event.h" />
     <ClInclude Include="include\gpuspoof.h" />
-    <ClInclude Include="include\volumespoof.h" />
     <ClInclude Include="include\ioctlhook.h" />
     <ClInclude Include="include\iommu.h" />
+    <ClInclude Include="include\smbiosspoof.h" />
     <ClInclude Include="include\spoof.h" />
     <ClInclude Include="include\umspoof.hpp" />
     <ClInclude Include="include\umutils.hpp" />
@@ -145,6 +144,7 @@
     <ClInclude Include="include\VMMDef.h" />
     <ClInclude Include="include\Vmoperations.h" />
     <ClInclude Include="include\VMTimers.h" />
+    <ClInclude Include="include\volumespoof.h" />
     <ClInclude Include="include\VTx.h" />
     <ClInclude Include="include\VTxException.h" />
     <ClInclude Include="include\windowspoof.h" />
@@ -152,16 +152,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ddma.cpp" />
+    <ClCompile Include="src\diskspoof.cpp" />
+    <ClCompile Include="src\efispoof.cpp" />
     <ClCompile Include="src\EPT.cpp" />
     <ClCompile Include="src\event.cpp" />
     <ClCompile Include="src\exception.cpp" />
     <ClCompile Include="src\gpuspoof.cpp" />
     <ClCompile Include="src\ioctrlhook.cpp" />
     <ClCompile Include="src\iommu.cpp" />
-    <ClCompile Include="src\diskspoof.cpp" />
-    <ClInclude Include="src\volumespoof.cpp" />
+    <ClCompile Include="src\smbiosspoof.cpp" />
     <ClCompile Include="src\spoof.cpp" />
-    <ClInclude Include="src\smbiosspoof.cpp" />
     <ClCompile Include="src\SVM.cpp" />
     <ClCompile Include="src\Vmcall.cpp" />
     <ClCompile Include="src\VMCSCheck.cpp" />
@@ -171,9 +171,11 @@
     <ClCompile Include="src\VMMDef.cpp" />
     <ClCompile Include="src\Vmoperations.cpp" />
     <ClCompile Include="src\VMTimers.cpp" />
+    <ClCompile Include="src\volumespoof.cpp" />
     <ClCompile Include="src\VTx.cpp" />
     <ClCompile Include="src\VTxException.cpp" />
     <ClCompile Include="src\windowspoof.cpp" />
+    <ClCompile Include="src\wmispoof.cpp" />
     <ClCompile Include="src\VmIDT.cpp" />
   </ItemGroup>
   <ItemGroup>
