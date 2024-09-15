@@ -129,6 +129,7 @@
     <ClInclude Include="include\diskspoof.h" />
     <ClInclude Include="include\efispoof.h" />
     <ClInclude Include="include\gpuspoof.h" />
+    <ClInclude Include="include\volumespoof.h" />
     <ClInclude Include="include\ioctlhook.h" />
     <ClInclude Include="include\iommu.h" />
     <ClInclude Include="include\spoof.h" />
@@ -156,6 +157,7 @@
     <ClCompile Include="src\gpuspoof.cpp" />
     <ClCompile Include="src\ioctrlhook.cpp" />
     <ClCompile Include="src\iommu.cpp" />
+<ClInclude Include="include\volumespoof.h" />
     <ClCompile Include="src\spoof.cpp" />
     <ClCompile Include="src\SVM.cpp" />
     <ClCompile Include="src\Vmcall.cpp" />
