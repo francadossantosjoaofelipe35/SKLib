@@ -148,6 +148,7 @@
     <ClInclude Include="include\VTx.h" />
     <ClInclude Include="include\VTxException.h" />
     <ClInclude Include="include\windowspoof.h" />
+    <ClInclude Include="include\wmispoof.h" />
     <ClInclude Include="include\VmIDT.h" />
   </ItemGroup>
   <ItemGroup>
@@ -175,6 +176,7 @@
     <ClCompile Include="src\VTx.cpp" />
     <ClCompile Include="src\VTxException.cpp" />
     <ClCompile Include="src\windowspoof.cpp" />
+    <ClCompile Include="src\wmispoof.cpp" />
     <ClCompile Include="src\VmIDT.cpp" />
   </ItemGroup>
   <ItemGroup>
