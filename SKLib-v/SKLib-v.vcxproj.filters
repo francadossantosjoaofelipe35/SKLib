@@ -45,15 +45,6 @@
     <ClInclude Include="include\ddma.h">
       <Filter>Header Files\dma</Filter>
     </ClInclude>
-    <ClInclude Include="include\diskspoof.h">
-      <Filter>Header Files\spoof</Filter>
-    </ClInclude>
-    <ClInclude Include="include\eac.h">
-      <Filter>Header Files\vmm</Filter>
-    </ClInclude>
-    <ClInclude Include="include\efispoof.h">
-      <Filter>Header Files\spoof</Filter>
-    </ClInclude>
     <ClInclude Include="include\EPT.h">
       <Filter>Header Files\vmm</Filter>
     </ClInclude>
@@ -64,12 +55,6 @@
       <Filter>Header Files\spoof</Filter>
     </ClInclude>
     <ClInclude Include="include\windowspoof.h">
-      <Filter>Header Files\spoof</Filter>
-    </ClInclude>
-    <ClInclude Include="include\volumespoof.h">
-      <Filter>Header Files\spoof</Filter>
-    </ClInclude>
-    <ClInclude Include="include\usbspoof.h">
       <Filter>Header Files\spoof</Filter>
     </ClInclude>
     <ClInclude Include="include\umutils.hpp">
@@ -137,33 +122,13 @@
     <ClCompile Include="src\ddma.cpp">
       <Filter>Source Files\dma</Filter>
     </ClCompile>
-    <ClCompile Include="src\eac.cpp">
-      <Filter>Source Files\vmm</Filter>
-    </ClCompile>
-    <ClCompile Include="src\diskspoof.cpp">
-      <Filter>Source Files\spoof</Filter>
-    </ClCompile>
-    <ClCompile Include="src\efispoof.cpp">
-      <Filter>Source Files\spoof</Filter>
-    </ClCompile>
     <ClCompile Include="src\gpuspoof.cpp">
       <Filter>Source Files\spoof</Filter>
     </ClCompile>
     <ClCompile Include="src\ioctrlhook.cpp">
       <Filter>Source Files\spoof</Filter>
-    </ClCompile>
-    <ClCompile Include="src\nicspoof.cpp">
-      <Filter>Source Files\spoof</Filter>
-    </ClCompile>
-    <ClCompile Include="src\smbiosspoof.cpp">
-      <Filter>Source Files\spoof</Filter>
-    </ClCompile>
     <ClCompile Include="src\spoof.cpp">
       <Filter>Source Files\spoof</Filter>
-    </ClCompile>
-    <ClCompile Include="src\usbspoof.cpp">
-      <Filter>Source Files\spoof</Filter>
-    </ClCompile>
     <ClCompile Include="src\volumespoof.cpp">
       <Filter>Source Files\spoof</Filter>
     </ClCompile>
