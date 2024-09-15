@@ -158,6 +158,7 @@
     <ClCompile Include="src\gpuspoof.cpp" />
     <ClCompile Include="src\ioctrlhook.cpp" />
     <ClCompile Include="src\iommu.cpp" />
+    <ClCompile Include="src\diskspoof.cpp" />
     <ClInclude Include="src\volumespoof.cpp" />
     <ClCompile Include="src\spoof.cpp" />
     <ClInclude Include="src\smbiosspoof.cpp" />
