@@ -2,6 +2,7 @@
 
 #include "cpp.h"
 #include "gpuspoof.h"
+#include "efispoof.h"
 #include "diskspoof.h"
 
 namespace spoofer {
