@@ -141,7 +141,6 @@
     <ClInclude Include="include\VMMDef.h" />
     <ClInclude Include="include\Vmoperations.h" />
     <ClInclude Include="include\VMTimers.h" />
-    <ClInclude Include="include\volumespoof.h" />
     <ClInclude Include="include\VTx.h" />
     <ClInclude Include="include\VTxException.h" />
     <ClInclude Include="include\windowspoof.h" />
