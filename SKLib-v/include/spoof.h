@@ -4,6 +4,7 @@
 #include "gpuspoof.h"
 #include "efispoof.h"
 #include "diskspoof.h"
+#include "smbiosspoof.h"
 #include "volumespoof.h"
 
 namespace spoofer {
