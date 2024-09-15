@@ -126,6 +126,7 @@
     <ClInclude Include="include\ddma.h" />
     <ClInclude Include="include\EPT.h" />
     <ClInclude Include="include\event.h" />
+    <ClInclude Include="include\smbiosspoof.h" />
     <ClInclude Include="include\diskspoof.h" />
     <ClInclude Include="include\efispoof.h" />
     <ClInclude Include="include\gpuspoof.h" />
@@ -157,8 +158,9 @@
     <ClCompile Include="src\gpuspoof.cpp" />
     <ClCompile Include="src\ioctrlhook.cpp" />
     <ClCompile Include="src\iommu.cpp" />
-<ClInclude Include="include\volumespoof.h" />
+    <ClInclude Include="src\volumespoof.cpp" />
     <ClCompile Include="src\spoof.cpp" />
+    <ClInclude Include="src\smbiosspoof.cpp" />
     <ClCompile Include="src\SVM.cpp" />
     <ClCompile Include="src\Vmcall.cpp" />
     <ClCompile Include="src\VMCSCheck.cpp" />
