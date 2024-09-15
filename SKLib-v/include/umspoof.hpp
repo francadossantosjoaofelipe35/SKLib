@@ -17,7 +17,13 @@ namespace spoofer {
 	}
 
 	__forceinline void ExtraCleanup() {
+		system("vssadmin delete shadows /All /Quiet");
+
+		system("net stop winmgmt /Y");
 		system("ipconfig /flushdns");
+		system("certutil -URLCache * delete");
+
+		system("taskkill /F /IM WmiPrvSE.exe /T");
 		system("powershell -c \"Reset-PhysicalDisk *\"");
 		system("getmac /v");
 	}
@@ -297,6 +303,11 @@ namespace spoofer {
 		//}
 
 		{
+			std::thread spoofThread(ExtraCleanup);
+			spoofThread.detach();
+		}
+		
+		{
 			std::thread spoofThread(SpoofNICs);
 			spoofThread.detach();
 		}
@@ -323,6 +334,11 @@ namespace spoofer {
 
 		{
 			std::thread spoofThread(SpoofDisks);
+			spoofThread.detach();
+		}
+
+		{
+			std::thread spoofThread(SpoofUEFI);
 			spoofThread.detach();
 		}
 
