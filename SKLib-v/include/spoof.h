@@ -4,6 +4,7 @@
 #include "gpuspoof.h"
 #include "efispoof.h"
 #include "diskspoof.h"
+#include "volumespoof.h"
 
 namespace spoofer {
 	NTSTATUS SpoofAll(DWORD64 seed = TEST_SEED);
