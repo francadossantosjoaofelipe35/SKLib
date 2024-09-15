@@ -164,7 +164,6 @@
     <ClCompile Include="src\VMMDef.cpp" />
     <ClCompile Include="src\Vmoperations.cpp" />
     <ClCompile Include="src\VMTimers.cpp" />
-    <ClCompile Include="src\volumespoof.cpp" />
     <ClCompile Include="src\VTx.cpp" />
     <ClCompile Include="src\VTxException.cpp" />
     <ClCompile Include="src\windowspoof.cpp" />
