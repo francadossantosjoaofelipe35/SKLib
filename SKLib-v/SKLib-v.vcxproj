@@ -127,6 +127,7 @@
     <ClInclude Include="include\EPT.h" />
     <ClInclude Include="include\event.h" />
     <ClInclude Include="include\diskspoof.h" />
+    <ClInclude Include="include\efispoof.h" />
     <ClInclude Include="include\gpuspoof.h" />
     <ClInclude Include="include\ioctlhook.h" />
     <ClInclude Include="include\iommu.h" />
