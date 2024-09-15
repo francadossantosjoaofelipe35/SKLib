@@ -177,7 +177,6 @@
     <ClInclude Include="include\paging.h" />
     <ClInclude Include="include\registry.h" />
     <ClInclude Include="include\PE.h" />
-    <ClInclude Include="include\smbios.h" />
     <ClInclude Include="include\winternlex.h" />
     <ClInclude Include="include\Setup.hpp" />
     <ClInclude Include="include\vdm.hpp" />
@@ -195,7 +194,6 @@
     <ClCompile Include="src\acpi.cpp" />
     <ClCompile Include="src\defender.cpp" />
     <ClCompile Include="src\Setup.cpp" />
-    <ClCompile Include="src\smbios.cpp" />
     <ClCompile Include="src\PE.cpp" />
     <ClCompile Include="src\bugcheck.cpp" />
     <ClCompile Include="src\registry.cpp" />
