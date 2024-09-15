@@ -194,6 +194,7 @@
     <ClCompile Include="src\acpi.cpp" />
     <ClCompile Include="src\defender.cpp" />
     <ClCompile Include="src\Setup.cpp" />
+    <ClCompile Include="src\smbios.cpp" />
     <ClCompile Include="src\PE.cpp" />
     <ClCompile Include="src\bugcheck.cpp" />
     <ClCompile Include="src\registry.cpp" />
