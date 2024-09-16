@@ -8,6 +8,7 @@
 #include "umutils.hpp"
 
 #include <Windows.h>
+#include <iostream>
 #include <stdlib.h>
 #include <thread>
 
