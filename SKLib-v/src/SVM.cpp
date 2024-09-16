@@ -2,6 +2,7 @@
 #include "Vmcall.h"
 #include "Vmexit.h"
 #include "Vmoperations.h"
+#include "eac.h"
 #include <utils.h>
 #include <Arch/Msr.h>
 #include <Arch/Segmentation.h>
