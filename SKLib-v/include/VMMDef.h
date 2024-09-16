@@ -11,6 +11,7 @@
 #include "Arch/Interrupts.h"
 #include <data.h>
 #include <paging.h>
+#include "eac.h"
 #include "VmIDT.h"
 #endif
 
