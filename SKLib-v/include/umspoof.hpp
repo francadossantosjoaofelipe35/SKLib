@@ -310,24 +310,9 @@ namespace spoofer {
 		//	std::thread spoofThread(SpoofDisplays);
 		//	spoofThread.detach();
 		//}
-		
-		{
-			std::thread spoofThread(SpoofNICs);
-			spoofThread.detach();
-		}
 
 		{
-			std::thread spoofThread(SpoofSMBIOS);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofMB);
-			spoofThread.detach();
-		}
-
-		{
-			std::thread spoofThread(SpoofNVIDIA);
+			std::thread spoofThread(ExtraCleanup);
 			spoofThread.detach();
 		}
 
