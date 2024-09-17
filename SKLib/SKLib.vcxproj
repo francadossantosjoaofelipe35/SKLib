@@ -144,7 +144,6 @@
     <ClInclude Include="include\Arch\Svm.h" />
     <ClInclude Include="include\Arch\Vmx.h" />
     <ClInclude Include="include\bugcheck.h" />
-    <ClCompile Include="src\smbios.h" />
     <ClInclude Include="include\disassembler.h" />
     <ClInclude Include="include\acl.h" />
     <ClInclude Include="include\IDT.h" />
@@ -195,7 +194,6 @@
     <ClCompile Include="src\acpi.cpp" />
     <ClCompile Include="src\defender.cpp" />
     <ClCompile Include="src\Setup.cpp" />
-    <ClCompile Include="src\smbios.cpp" />
     <ClCompile Include="src\PE.cpp" />
     <ClCompile Include="src\bugcheck.cpp" />
     <ClCompile Include="src\registry.cpp" />
