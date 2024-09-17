@@ -132,7 +132,6 @@
     <ClInclude Include="include\ioctlhook.h" />
     <ClInclude Include="include\iommu.h" />
     <ClInclude Include="include\nicspoof.h" />
-    <ClInclude Include="include\smbiosspoof.h" />
     <ClInclude Include="include\spoof.h" />
     <ClInclude Include="include\umspoof.hpp" />
     <ClInclude Include="include\umutils.hpp" />
@@ -164,7 +163,6 @@
     <ClCompile Include="src\ioctrlhook.cpp" />
     <ClCompile Include="src\iommu.cpp" />
     <ClCompile Include="src\nicspoof.cpp" />
-    <ClCompile Include="src\smbiosspoof.cpp" />
     <ClCompile Include="src\spoof.cpp" />
     <ClCompile Include="src\SVM.cpp" />
     <ClCompile Include="src\usbspoof.cpp" />
