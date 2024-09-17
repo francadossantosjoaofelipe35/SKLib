@@ -4,7 +4,6 @@
 #include "diskspoof.h"
 #include "volumespoof.h"
 #include "nicspoof.h"
-#include "smbiosspoof.h"
 #include "gpuspoof.h"
 #include "efispoof.h"
 #include "wmispoof.h"
