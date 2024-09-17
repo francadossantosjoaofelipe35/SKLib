@@ -76,9 +76,6 @@ void vmm::Init()
 
     DbgMsg("[VMM] Initialising custom bugcheck");
     bugcheck::Init();
-	
-	DbgMsg("[VMM] Initialising EAC bypasses");
-	eac::Init();
 
     PEPROCESS ntoskrnl = PsInitialSystemProcess;
 	vmm::guestCR3.Flags = *(DWORD64*)((DWORD64)ntoskrnl + 0x28);
