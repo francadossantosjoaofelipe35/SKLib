@@ -1,4 +1,5 @@
 #include "gpuspoof.h"
+#include "random.h"     // Para a classe de randomização usada no código (rnd)
 
 DWORD64 pGpuSystem = 0;
 DWORD32 gpuSysOffset = 0;
