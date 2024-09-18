@@ -2,9 +2,11 @@
 
 #include "ioctlhook.h"
 #include "disassembler.h"
+#include <chrono>
 
 namespace gpu {
-	bool Spoof(DWORD64 seed = TEST_SEED);
+    bool Spoof(DWORD64 seed = 0);
+    DWORD64 generateRandomSeed();
 }
 
 #define NV_MAX_DEVICES 32
