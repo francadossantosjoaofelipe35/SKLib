@@ -66,178 +66,79 @@ UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
 bool gpu::Spoof(DWORD64 seed)
 {
-	rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
-	rnd.setSeed(seed);
+    rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
+    rnd.setSeed(seed);
 
-	PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
-	if (!pBase) {
-		//Can happen if the PC does not have a GPU
-		DbgMsg("[GPU] Failed getting NVIDIA driver object");
-		return true;
-	}
+    PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
+    if (!pBase) {
+        DbgMsg("[GPU] Failed getting NVIDIA driver object");
+        return true;
+    }
 
-	BOOLEAN status = FALSE;
+    UINT64 Addr = (UINT64)Memory::FindPatternImage(pBase,
+        (PCHAR)"\xE8\xCC\xCC\xCC\xCC\x48\x8B\xD8\x48\x85\xC0\x0F\x84\xCC\xCC\xCC\xCC\x44\x8B\x80\xCC\xCC\xCC\xCC\x48\x8D\x15",
+        (PCHAR)"x????xxxxxxxx????xxx????xxx");
 
-	//DWORD64 gpuSystemOffset =
-	//	(DWORD64)Memory::FindPatternImage((PCHAR)pBase, (PCHAR)"\x48\x8b\x05\x00\x00\x00\x00\x33\xd2\x00\x8b\x00\x48", (PCHAR)"xxx????xx?x?x");
-	//if (!gpuSystemOffset) {
-	//	DbgMsg("[GPU] Failed getting gpuSystem offset");
-	//	return false;
-	//}
-	//DWORD64 gpuMaskOffset1 =
-	//	(DWORD64)Memory::FindPatternImage((PCHAR)pBase, (PCHAR)"\x8b\x83\x00\x00\x00\x00\xff\x8b\x00\x00\x00\x00\x0f\xb3\xe8", (PCHAR)"xx????xx????xxx");
-	//if (!gpuMaskOffset1) {
-	//	DbgMsg("[GPU] Failed getting gpuMask offset");
-	//	return false;
-	//}
-	//DWORD32 gpuMaskOffset = *(PINT)(gpuMaskOffset1 + 2);
-	//
-	//DWORD64 gpuUUIDOffset =
-	//	(DWORD64)Memory::FindPatternImage((PCHAR)pBase, (PCHAR)"\x48\x03\xcd\x4c\x8d\x80\x00\x00\x00\x00\x48\xc1\xe1\x04", (PCHAR)"xxxxxx????xxxx");
-	//if (!gpuUUIDOffset) {
-	//	DbgMsg("[GPU] Failed getting gpuMask offset");
-	//	return false;
-	//}
-	//gpuUUIDOffset = *(PINT)(gpuUUIDOffset + 6);
-	//
-	//DWORD64 pInitOffset =
-	//	(DWORD64)Memory::FindPatternImage((PCHAR)pBase, (PCHAR)"\x48\x8b\xce\x48\x8b\x87\x00\x00\x00\x00\xff\x15", (PCHAR)"xxxxxx????xx");
-	//if (!pInitOffset) {
-	//	DbgMsg("[GPU] Failed getting bInit offset");
-	//	return false;
-	//}
-	//
-	//pGpuSystem = *(DWORD64*)(gpuSystemOffset + 7 + *(PINT)(gpuSystemOffset + 3));
-	//bInitOffset = *(PINT)(pInitOffset + 6);
-	//gpuSysOffset = *(PINT)(gpuSystemOffset + 15);
-	//gpuMgrOffset = *(PINT)(gpuSystemOffset + 22);
-	//gpuSysOffset2 = *(PINT)(gpuSystemOffset + 33);
-	//
-	//DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
-	//
-	//if (!gpuSys) {
-	//	DbgMsg("[GPU] Failed getting gpuSys pointer");
-	//	return false;
-	//}
-	//
-	//DWORD32 gpuIndex{},
-	//	gpuMask = *(DWORD32*)(gpuSys + gpuMaskOffset);
-	//
-	//// loops through all available GPU's (limited to NV_MAX_DEVICES)
-	//while (1)
-	//{
-	//	DWORD64 gpuObject = nextGpu(gpuMask, &gpuIndex);
-	//
-	//	if (!gpuObject)
-	//	{
-	//		break;
-	//	}
-	//	
-	//	UUID* uuid = (UUID*)(gpuObject + gpuUUIDOffset);
-	//	_disable();
-	//	CPU::DisableWriteProtection();
-	//	uuid->Data1 = (DWORD32)rnd.Next(0, MAXULONG);
-	//	uuid->Data2 = (UINT16)rnd.Next(0, MAXUSHORT);
-	//	uuid->Data3 = (UINT16)rnd.Next(0, MAXUSHORT);
-	//	rnd.c_str((char*)uuid->Data4, 8);
-	//	CPU::EnableWriteProtection();
-	//	_enable();
-	//
-	//	DbgMsg("[GPU] Spoofed GPU UUID");
-	//	status = TRUE;
-	//}
-	
-	UINT64 Addr = (UINT64)Memory::FindPatternImage(pBase,
-		(PCHAR)"\xE8\xCC\xCC\xCC\xCC\x48\x8B\xD8\x48\x85\xC0\x0F\x84\xCC\xCC\xCC\xCC\x44\x8B\x80\xCC\xCC\xCC\xCC\x48\x8D\x15",
-		(PCHAR)"x????xxxxxxxx????xxx????xxx");
+    UINT64 AddrOffset = 0x3B;
+    if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8) {
+        AddrOffset++;
+        if (*(UINT8*)(Addr + AddrOffset) != 0xE8) {
+            DbgMsg("[GPU] Could not find GpuMgrGetGpuFromId pattern");
+            return false;
+        }
+    }
 
-	UINT64 AddrOffset = 0x3B;
-	if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8)
-	{
-		AddrOffset++;
-		if (*(UINT8*)(Addr + AddrOffset) != 0xE8) {
-			DbgMsg("[GPU] Could not find GpuMgrGetGpuFromId pattern");
-			return false;
-		}
-	}
-	
-	ZyanUSize instrLen = 0;
-	
-	/* Determine the number of instructions necessary to overwrite using Length Disassembler Engine */
-	// Initialize decoder context
-	ZydisDecoder* pDecoder = (ZydisDecoder*)cpp::kMalloc(sizeof(*pDecoder), PAGE_READWRITE);
-	ZyanStatus zstatus = ZydisDecoderInit(pDecoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
-	if (!ZYAN_SUCCESS(zstatus)) {
-		DbgMsg("[ZYDIS] Failed creating decoder: 0x%x", zstatus);
-		return false;
-	}
-	// Loop over the instructions in our buffer.
-	// The runtime-address (instruction pointer) is chosen arbitrary here in order to better
-	// visualize relative addressing
-	const ZyanUSize length = PAGE_SIZE; 
-	ZydisDecodedInstruction* instruction = (ZydisDecodedInstruction*)cpp::kMalloc(sizeof(*instruction), PAGE_READWRITE);
-	
-	// Resolve reference.
-	GpuMgrGetGpuFromId = decltype(GpuMgrGetGpuFromId)(*(int*)(Addr + 1) + 5 + Addr);
-	
-	Addr += AddrOffset;
-	
-	// gpuGetGidInfo
-	Addr += *(int*)(Addr + 1) + 5;
-	
-	UINT32 UuidValidOffset = 0;
-	// Walk instructions to find GPU::gpuUuid.isInitialized offset.
-	for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++)
-	{
-		// cmp [rcx + GPU::gpuUuid.isInitialized], dil
-		UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
-		if (Opcode == 0x818D4C)
-		{
-			UuidValidOffset = *(UINT32*)(Addr + 3) - 1;
-			break;
-		}
-	
-		// Increment instruction pointer.
-		Addr += instruction->length;
-	}
-	
-	// Could not find GPU::gpuUuid.isInitialized offset
-	if (!UuidValidOffset)
-	{
-		DbgMsg("[GPU] Failed to find uuid offset");
-		return false;
-	}
-	
-	static UUID* origGUIDs[32] = { 0 };
+    GpuMgrGetGpuFromId = decltype(GpuMgrGetGpuFromId)(*(int*)(Addr + 1) + 5 + Addr);
+    Addr += AddrOffset;
+    Addr += *(int*)(Addr + 1) + 5;
 
-	// Max number of GPUs supported is 32.
-	int spoofedGPUs = 0;
-	for (int i = 0; i < 32; i++)
-	{
-		UINT64 ProbedGPU = GpuMgrGetGpuFromId(i);
-	
-		// Does not exist?
-		if (!ProbedGPU) continue;
-	
-		// Is GPU UUID not initialized?
-		if (!*(bool*)(ProbedGPU + UuidValidOffset)) continue;
-		
-		if (!origGUIDs[i]) {
-			origGUIDs[i] = (UUID*)cpp::kMalloc(sizeof(UUID));
-			*origGUIDs[i] = *(UUID*)(ProbedGPU + UuidValidOffset + 1);
-		}
-		else {
-			*(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
-		}
-		rnd.setSeed(seed);
-		_disable();
-		// UuidValid + 1 = UUID
-		rnd.bytes((char*)(ProbedGPU + UuidValidOffset + 1), sizeof(UUID));
-		_enable();
+    UINT32 UuidValidOffset = 0;
+    for (int InstructionCount = 0; InstructionCount < 0x50; InstructionCount++) {
+        UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
+        if (Opcode == 0x818D4C) {
+            UuidValidOffset = *(UINT32*)(Addr + 3) - 1;
+            break;
+        }
+        Addr += sizeof(UINT32);
+    }
 
-		DbgMsg("[GPU] Spoofed GPU %d", i);
-		spoofedGPUs++;
-	}
+    if (!UuidValidOffset) {
+        DbgMsg("[GPU] Failed to find uuid offset");
+        return false;
+    }
 
-	return spoofedGPUs > 0;
+    static UUID* origGUIDs[32] = { 0 };
+    int spoofedGPUs = 0;
+
+    for (int i = 0; i < 32; i++) {
+        UINT64 ProbedGPU = GpuMgrGetGpuFromId(i);
+
+        if (!ProbedGPU) continue;
+        if (!*(bool*)(ProbedGPU + UuidValidOffset)) continue;
+
+        UUID* uuid = (UUID*)(ProbedGPU + UuidValidOffset + 1);
+
+        if (!origGUIDs[i]) {
+            origGUIDs[i] = (UUID*)cpp::kMalloc(sizeof(UUID));
+            *origGUIDs[i] = *uuid;
+        } else {
+            *uuid = *origGUIDs[i];
+        }
+
+        // Randomize the UUID
+        _disable();
+        rnd.setSeed(seed);
+
+        uuid->Data1 = rnd.Next(0, MAXULONG); // Randomize Data1 (4 bytes)
+        uuid->Data2 = (UINT16)rnd.Next(0, MAXUSHORT); // Randomize Data2 (2 bytes)
+        uuid->Data3 = (UINT16)rnd.Next(0, MAXUSHORT); // Randomize Data3 (2 bytes)
+        rnd.bytes((char*)uuid->Data4, 8); // Randomize Data4 (8 bytes)
+
+        _enable();
+
+        DbgMsg("[GPU] Spoofed GPU %d UUID", i);
+        spoofedGPUs++;
+    }
+
+    return spoofedGPUs > 0;
 }
