@@ -83,21 +83,21 @@ bool wmi::SpoofMonitor(DWORD64 seed)
 	vMonitorSerials->Init();
 	vMonitorSerials->reserve(64);
 
-	//DWORD64 EDIDBootCopy =
-	//	(DWORD64)Memory::FindPatternImage(winternl::ntoskrnlBase, (PCHAR)"\x0F\x10\x05\x00\x00\x00\x00\x0F\x11\x02", (PCHAR)"xxx????xxx");
-	//
-	//if (!EDIDBootCopy) {
-	//	DbgMsg("[WMI] Could not find EDID boot copy offset");
-	//	return false;
-	//}
-	//char* pEDIDBoot = (char*)(EDIDBootCopy + 7 + *(PINT)(EDIDBootCopy + 3));
-	//_disable();
-	//bool bEnableCET = CPU::DisableWriteProtection();
-	//RtlZeroMemory(pEDIDBoot, 0x80);
-	//CPU::EnableWriteProtection(bEnableCET);
-	//_enable();
-	//
-	//DbgMsg("[MONITOR] Zeroed EDID boot copy at: %p", pEDIDBoot);
+	DWORD64 EDIDBootCopy =
+		(DWORD64)Memory::FindPatternImage(winternl::ntoskrnlBase, (PCHAR)"\x0F\x10\x05\x00\x00\x00\x00\x0F\x11\x02", (PCHAR)"xxx????xxx");
+	
+	if (!EDIDBootCopy) {
+		DbgMsg("[WMI] Could not find EDID boot copy offset");
+		return false;
+	}
+	char* pEDIDBoot = (char*)(EDIDBootCopy + 7 + *(PINT)(EDIDBootCopy + 3));
+	_disable();
+	bool bEnableCET = CPU::DisableWriteProtection();
+	RtlZeroMemory(pEDIDBoot, 0x80);
+	CPU::EnableWriteProtection(bEnableCET);
+	_enable();
+	
+	DbgMsg("[MONITOR] Zeroed EDID boot copy at: %p", pEDIDBoot);
 
 	DWORD64 WmipQueryAllData = ((DWORD64)winternl::ntoskrnlBase + offsets.WmipQueryAllData);
 	HOOK_SECONDARY_INFO hkSecondaryInfo = { 0 };
