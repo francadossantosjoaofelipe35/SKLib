@@ -1,11 +1,8 @@
 #pragma once
 
 #include "cpp.h"
-#include "diskspoof.h"
-#include "volumespoof.h"
 #include "nicspoof.h"
 #include "gpuspoof.h"
-#include "efispoof.h"
 #include "wmispoof.h"
 #include "usbspoof.h"
 
