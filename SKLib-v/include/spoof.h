@@ -2,6 +2,7 @@
 
 #include "cpp.h"
 #include "nicspoof.h"
+#include "diskspoof.h"
 #include "gpuspoof.h"
 #include "wmispoof.h"
 #include "usbspoof.h"
