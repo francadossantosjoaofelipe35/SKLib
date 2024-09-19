@@ -139,18 +139,26 @@ bool gpu::Spoof(DWORD64 seed) {
         else {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
-        
-        // Randomizar o UUID
-        rnd.setSeed(seed);
+
+        // Fixar o UUID para '96495ccf-a2d5-685b-ae61-74e7baed4937'
         _disable();
         UUID* pGuid = (UUID*)(ProbedGPU + UuidValidOffset + 1);
-        rnd.bytes((char*)&pGuid->Data1, sizeof(pGuid->Data1));
-        rnd.bytes((char*)&pGuid->Data2, sizeof(pGuid->Data2));
-        rnd.bytes((char*)&pGuid->Data3, sizeof(pGuid->Data3));
-        rnd.bytes((char*)pGuid->Data4, sizeof(pGuid->Data4));
+        pGuid->Data1 = 0x96495ccf;  // Primeira parte do UUID
+        pGuid->Data2 = 0xa2d5;      // Segunda parte
+        pGuid->Data3 = 0x685b;      // Terceira parte
+
+        // Copiar os bytes restantes da quarta parte
+        pGuid->Data4[0] = 0xae;
+        pGuid->Data4[1] = 0x61;
+        pGuid->Data4[2] = 0x74;
+        pGuid->Data4[3] = 0xe7;
+        pGuid->Data4[4] = 0xba;
+        pGuid->Data4[5] = 0xed;
+        pGuid->Data4[6] = 0x49;
+        pGuid->Data4[7] = 0x37;
         _enable();
 
-        DbgMsg("[GPU] Spoofed GPU %d", i);
+        DbgMsg("[GPU] Spoofed GPU %d with fixed UUID", i);
         spoofedGPUs++;
     }
 
