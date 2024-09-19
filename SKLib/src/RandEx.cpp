@@ -1,5 +1,4 @@
 #include "RandEx.h"
-#include <random>
 
 random::Random random::rnd;
 
@@ -66,11 +65,11 @@ void random::Random::setSecLevel(SecurityLevel eSecLevel) {
 }
 
 void random::Random::randomizeSeed() {
-    // Aleatoriza o seed usando operações bitwise e manipulação direta
-    _seed = reinterpret_cast<uintptr_t>(this);  // Usa o endereço da instância como base
-    _seed ^= (_seed << 13);  // Realiza algumas operações bitwise para aumentar a aleatoriedade
-    _seed ^= (_seed >> 17);
-    _seed ^= (_seed << 5);
+    // Aleatorizando o seed sem usar bibliotecas de random
+    _seed = reinterpret_cast<uintptr_t>(this); // Usa o endereço do objeto como base para o seed
+    _seed ^= (_seed << 13);  // Aplicando operações bitwise
+    _seed ^= (_seed >> 17);  // Mais operações bitwise para aleatoriedade
+    _seed ^= (_seed << 5);   // Continua a manipulação de bits para aleatorização
 }
 
 size_t random::Random::Next(size_t begin, size_t end) {
