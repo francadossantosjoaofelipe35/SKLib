@@ -1,8 +1,6 @@
 #include "RandEx.h"
 #include <windows.h>  // Para KeQueryTimeIncrement e KeQueryInterruptTime
 
-#pragma warning(disable : 4244)  // Suprimir warning de conversão
-
 random::Random random::rnd;
 
 ULONG random::Random::getRandom() {
