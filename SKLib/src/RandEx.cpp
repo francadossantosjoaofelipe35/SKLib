@@ -1,4 +1,5 @@
 #include "RandEx.h"
+#pragma warning(disable : 4244)
 
 random::Random random::rnd;
 
