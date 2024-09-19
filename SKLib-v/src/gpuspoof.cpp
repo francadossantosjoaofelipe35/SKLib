@@ -1,5 +1,6 @@
 #include <ctime> // Para obter o tempo atual
 #include "gpuspoof.h"
+#pragma warning(disable : 2220)  // Desativa o aviso C2220
 
 DWORD64 pGpuSystem = 0;
 DWORD32 gpuSysOffset = 0;
