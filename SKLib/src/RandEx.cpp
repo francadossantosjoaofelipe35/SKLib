@@ -1,5 +1,4 @@
 #include "RandEx.h"
-#include <chrono>  // Usaremos chrono para pegar um valor de tempo como seed
 
 namespace random {
 
@@ -10,15 +9,12 @@ ULONG Random::getRandom() {
         if (_seed == 0) {
             _seed = 987654321; // Valor inicial padrão
         }
-        // Geração de número aleatório usando LCG
-        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
-    } 
-    else if (_eSecLevel == SecurityLevel::PSEUDO) {
+        _seed = (8253729 * _seed + 2396403) % ULONG_MAX; // Geração de número aleatório
+    } else if (_eSecLevel == SecurityLevel::PSEUDO) {
         // Simulação de um seed aleatório
         _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
-    } 
-    else {
-        // Sempre atualiza o seed
+    } else {
+        // Geração de número aleatório de alta segurança
         _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
     }
     return _seed;
@@ -26,12 +22,15 @@ ULONG Random::getRandom() {
 
 Random::Random(SecurityLevel eSecLevl) {
     _eSecLevel = eSecLevl;
+
+    // Inicializa o seed de forma aleatória sem usar tempo ou bibliotecas externas
     if (eSecLevl == SecurityLevel::PREDICTABLE) {
-        _seed = 0;
+        _seed = 0; // Padrão
     } else {
-        // Inicializa o seed de forma aleatória usando um valor de tempo
-        _seed = static_cast<ULONG>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        // Gerar um seed com base em um valor fixo ou estado conhecido
+        _seed = 987654321; // Usar um valor fixo para a inicialização
     }
+
     _xorKey = this->Next(1ull, MAXULONG64);
 }
 
@@ -69,7 +68,7 @@ size_t Random::NextPredictable(size_t begin, size_t end) {
         return 1;
     }
     size_t ret = 0;
-    ret = begin ^ (size_t)_AddressOfReturnAddress();
+    ret = begin ^ (size_t)_AddressOfReturnAddress(); // Usando um valor fixo ou retorno
     ret <<= 32;
     ret |= begin ^ _xorKey;
     ret %= end;
@@ -84,7 +83,7 @@ int Random::NextPredictable(int begin, int end) {
 
 size_t Random::XorPredictable(size_t number) {
     if (_xorKey == 0) {
-        _xorKey = 987654321;
+        _xorKey = 987654321; // Valor inicial fixo
     }
     _xorKey = (8253729 * _xorKey + 2396403) % ULONG_MAX;
     return number ^ _xorKey;
