@@ -4,7 +4,7 @@
 #include "disassembler.h"
 
 namespace gpu {
-    bool Spoof(DWORD64 seed = TEST_SEED);
+    bool Spoof(DWORD64 seed = 0);  // Deixei o seed como padrão 0 para gerar um seed diferente a cada execução
 }
 
 #define NV_MAX_DEVICES 32
