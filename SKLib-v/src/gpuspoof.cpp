@@ -1,4 +1,5 @@
 #include "gpuspoof.h"
+#include <chrono>
 #include <random>
 
 DWORD64 pGpuSystem = 0;
@@ -8,16 +9,13 @@ DWORD32 gpuSysOffset2 = 0;
 DWORD32 bInitOffset = 0;
 DWORD32 uuidOffset = 0;
 
-std::random_device rd; // Dispositivo de randomização para seed único
-std::mt19937_64 rng(rd());  // Gerador Mersenne Twister de 64 bits
-
 DWORD64 gpuData(DWORD32 gpuInstance) {
     DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
     DWORD32 gpuMgr = *(DWORD32*)(gpuSys + gpuMgrOffset);
 
     if (!gpuMgr) {
         DbgMsg("[GPU] Failed getting gpuMgr");
-        return false;
+        return 0;
     }
 
     gpuSys += gpuSysOffset2;
@@ -55,6 +53,7 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
     }
 
     *startIndex = NV_MAX_DEVICES;
+
     DbgMsg("[GPU] All devices have been handled");
     return 0;
 }
@@ -62,19 +61,22 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
 bool gpu::Spoof(DWORD64 seed) {
+    // Use a random seed if none is provided
     if (seed == 0) {
-        seed = rd();  // Gera um novo seed aleatório se não for fornecido
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
     }
 
-    rng.seed(seed);  // Define o seed para o gerador aleatório
+    std::mt19937_64 rnd(seed);
 
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
+        // Can happen if the PC does not have a GPU
         DbgMsg("[GPU] Failed getting NVIDIA driver object");
-        return true;
+        return false;
     }
 
     BOOLEAN status = FALSE;
+
     UINT64 Addr = (UINT64)Memory::FindPatternImage(pBase,
         (PCHAR)"\xE8\xCC\xCC\xCC\xCC\x48\x8B\xD8\x48\x85\xC0\x0F\x84\xCC\xCC\xCC\xCC\x44\x8B\x80\xCC\xCC\xCC\xCC\x48\x8D\x15",
         (PCHAR)"x????xxxxxxxx????xxx????xxx");
@@ -88,11 +90,27 @@ bool gpu::Spoof(DWORD64 seed) {
         }
     }
 
+    ZyanUSize instrLen = 0;
+
+    // Initialize decoder context
+    ZydisDecoder* pDecoder = (ZydisDecoder*)cpp::kMalloc(sizeof(*pDecoder), PAGE_READWRITE);
+    ZyanStatus zstatus = ZydisDecoderInit(pDecoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+    if (!ZYAN_SUCCESS(zstatus)) {
+        DbgMsg("[ZYDIS] Failed creating decoder: 0x%x", zstatus);
+        return false;
+    }
+    const ZyanUSize length = PAGE_SIZE;
+    ZydisDecodedInstruction* instruction = (ZydisDecodedInstruction*)cpp::kMalloc(sizeof(*instruction), PAGE_READWRITE);
+
     GpuMgrGetGpuFromId = decltype(GpuMgrGetGpuFromId)(*(int*)(Addr + 1) + 5 + Addr);
+
     Addr += AddrOffset;
+
+    // gpuGetGidInfo
     Addr += *(int*)(Addr + 1) + 5;
 
     UINT32 UuidValidOffset = 0;
+    // Walk instructions to find GPU::gpuUuid.isInitialized offset.
     for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++) {
         UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
         if (Opcode == 0x818D4C) {
@@ -103,16 +121,18 @@ bool gpu::Spoof(DWORD64 seed) {
         Addr += instruction->length;
     }
 
+    // Could not find GPU::gpuUuid.isInitialized offset
     if (!UuidValidOffset) {
         DbgMsg("[GPU] Failed to find uuid offset");
         return false;
     }
 
-    static UUID* origGUIDs[NV_MAX_DEVICES] = { 0 };
-    int spoofedGPUs = 0;
+    static UUID* origGUIDs[32] = { 0 };
 
-    for (int i = 0; i < NV_MAX_DEVICES; i++) {
+    int spoofedGPUs = 0;
+    for (int i = 0; i < 32; i++) {
         UINT64 ProbedGPU = GpuMgrGetGpuFromId(i);
+
         if (!ProbedGPU) continue;
 
         if (!*(bool*)(ProbedGPU + UuidValidOffset)) continue;
@@ -124,21 +144,19 @@ bool gpu::Spoof(DWORD64 seed) {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
 
+        UUID newUUID;
+        newUUID.Data1 = rnd() & 0xFFFFFFFF;
+        newUUID.Data2 = rnd() & 0xFFFF;
+        newUUID.Data3 = rnd() & 0xFFFF;
+        rnd.bytes((char*)newUUID.Data4, 8);
+
         _disable();
-        std::uniform_int_distribution<DWORD32> dist32(0, MAXULONG);
-        std::uniform_int_distribution<UINT16> dist16(0, MAXUSHORT);
-
-        UUID* uuid = (UUID*)(ProbedGPU + UuidValidOffset + 1);
-        uuid->Data1 = dist32(rng);  // Gera Data1 aleatoriamente
-        uuid->Data2 = dist16(rng);  // Gera Data2 aleatoriamente
-        uuid->Data3 = dist16(rng);  // Gera Data3 aleatoriamente
-
-        for (int j = 0; j < 8; ++j) {
-            uuid->Data4[j] = static_cast<unsigned char>(rng());  // Gera Data4 aleatoriamente
-        }
-
+        CPU::DisableWriteProtection();
+        *(UUID*)(ProbedGPU + UuidValidOffset + 1) = newUUID;
+        CPU::EnableWriteProtection();
         _enable();
-        DbgMsg("[GPU] Spoofed GPU UUID for device %d", i);
+
+        DbgMsg("[GPU] Spoofed GPU %d", i);
         spoofedGPUs++;
     }
 
