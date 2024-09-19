@@ -1,5 +1,5 @@
 #include "RandEx.h"
-#include <ctime>
+#include <chrono>  // Usaremos chrono para pegar um valor de tempo como seed
 
 namespace random {
 
@@ -29,8 +29,8 @@ Random::Random(SecurityLevel eSecLevl) {
     if (eSecLevl == SecurityLevel::PREDICTABLE) {
         _seed = 0;
     } else {
-        // Inicializa o seed de forma aleatória
-        _seed = static_cast<ULONG>(time(nullptr)); // Usar o tempo atual como seed inicial
+        // Inicializa o seed de forma aleatória usando um valor de tempo
+        _seed = static_cast<ULONG>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     }
     _xorKey = this->Next(1ull, MAXULONG64);
 }
@@ -126,7 +126,7 @@ void Random::w_str(wchar_t* pOut, size_t sz) {
     static wchar_t charset[] = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     for (size_t n = 0; n < sz; n++) {
-        int key = getRandom() % (sizeof(charset) / 2 - 1);
+        int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
     pOut[sz] = 0;
@@ -146,7 +146,7 @@ void Random::w_str_upper(wchar_t* pOut, size_t sz) {
     static wchar_t charset[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     for (size_t n = 0; n < sz; n++) {
-        int key = getRandom() % (sizeof(charset) / 2 - 1);
+        int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
     pOut[sz] = 0;
@@ -166,7 +166,7 @@ void Random::w_str_hex(wchar_t* pOut, size_t sz) {
     static wchar_t charset[] = L"ABCDEF0123456789";
 
     for (size_t n = 0; n < sz; n++) {
-        int key = getRandom() % (sizeof(charset) / 2 - 1);
+        int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
     pOut[sz] = 0;
@@ -179,15 +179,6 @@ void Regenerate(SecurityLevel eSecLevl) {
 
 size_t Next(size_t begin, size_t end) {
     return rnd.Next(begin, end);
-}
-
-size_t NextHardware(size_t begin, size_t end) {
-    // Removido: não usa mais hardware
-    ULONG seed = rnd.getRandom();
-    seed %= end;
-    if (seed < begin)
-        seed += begin;
-    return seed;
 }
 
 int Next32(int begin, int end) {
