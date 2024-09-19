@@ -1,5 +1,4 @@
 #include "RandEx.h"
-#include <chrono>
 #include <random>
 
 random::Random random::rnd;
@@ -67,10 +66,11 @@ void random::Random::setSecLevel(SecurityLevel eSecLevel) {
 }
 
 void random::Random::randomizeSeed() {
-    // Usando o tempo atual e uma fonte adicional de entropia para gerar um seed
-    auto now = std::chrono::system_clock::now().time_since_epoch().count();
-    _seed = static_cast<ULONG>(now & 0xFFFFFFFF);
-    // Opcionalmente, adicione mais entropia ou manipule o seed se necessário
+    // Aleatoriza o seed usando operações bitwise e manipulação direta
+    _seed = reinterpret_cast<uintptr_t>(this);  // Usa o endereço da instância como base
+    _seed ^= (_seed << 13);  // Realiza algumas operações bitwise para aumentar a aleatoriedade
+    _seed ^= (_seed >> 17);
+    _seed ^= (_seed << 5);
 }
 
 size_t random::Random::Next(size_t begin, size_t end) {
