@@ -13,7 +13,7 @@ DWORD64 gpuData(DWORD32 gpuInstance) {
 
     if (!gpuMgr) {
         DbgMsg("[GPU] Failed getting gpuMgr");
-        return 0;  // Corrigido de 'false' para '0' (retorna DWORD64).
+        return 0;
     }
 
     gpuSys += gpuSysOffset2;
@@ -57,10 +57,15 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
 
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
-bool gpu::Spoof(DWORD64 seed) {
-    rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
-    rnd.setSeed(seed);
+// Função auxiliar para obter um valor pseudo-aleatório baseado em um ponteiro
+UINT64 generatePseudoRandom() {
+    UINT64 timeValue = __rdtsc();  // Valor baseado no timestamp da CPU
+    UINT64 stackAddress = (UINT64)&timeValue;  // Endereço atual da pilha
+    UINT64 memoryValue = *(UINT64*)stackAddress;  // Valor na memória naquele endereço
+    return timeValue ^ memoryValue;  // Combina os dois valores para gerar aleatoriedade
+}
 
+bool gpu::Spoof(DWORD64 seed) {
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
         // Pode acontecer se o PC não tiver uma GPU
@@ -140,25 +145,23 @@ bool gpu::Spoof(DWORD64 seed) {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
 
-        // Fixar o UUID para '96495ccf-a2d5-685b-ae61-74e7baed4937'
+        // Gerar um UUID pseudo-aleatório baseado em valores de memória e timestamp da CPU
+        UINT64 randomValue = generatePseudoRandom();
+
+        // Definir os valores do UUID com base no valor pseudo-aleatório
         _disable();
         UUID* pGuid = (UUID*)(ProbedGPU + UuidValidOffset + 1);
-        pGuid->Data1 = 0x96495ccf;  // Primeira parte do UUID
-        pGuid->Data2 = 0xa2d5;      // Segunda parte
-        pGuid->Data3 = 0x685b;      // Terceira parte
+        pGuid->Data1 = (randomValue & 0xFFFFFFFF);  // Primeira parte do UUID
+        pGuid->Data2 = (randomValue >> 32) & 0xFFFF;  // Segunda parte do UUID
+        pGuid->Data3 = (randomValue >> 48) & 0xFFFF;  // Terceira parte do UUID
 
-        // Copiar os bytes restantes da quarta parte
-        pGuid->Data4[0] = 0xae;
-        pGuid->Data4[1] = 0x61;
-        pGuid->Data4[2] = 0x74;
-        pGuid->Data4[3] = 0xe7;
-        pGuid->Data4[4] = 0xba;
-        pGuid->Data4[5] = 0xed;
-        pGuid->Data4[6] = 0x49;
-        pGuid->Data4[7] = 0x37;
+        // Definir a quarta parte do UUID
+        for (int j = 0; j < 8; j++) {
+            pGuid->Data4[j] = (randomValue >> (j * 8)) & 0xFF;
+        }
         _enable();
 
-        DbgMsg("[GPU] Spoofed GPU %d with fixed UUID", i);
+        DbgMsg("[GPU] Spoofed GPU %d with randomized UUID", i);
         spoofedGPUs++;
     }
 
