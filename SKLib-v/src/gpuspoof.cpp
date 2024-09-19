@@ -8,64 +8,56 @@ DWORD32 bInitOffset = 0;
 DWORD32 uuidOffset = 0;
 
 DWORD64 gpuData(DWORD32 gpuInstance) {
-	DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
-	DWORD32 gpuMgr = *(DWORD32*)(gpuSys + gpuMgrOffset);
+    DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
+    DWORD32 gpuMgr = *(DWORD32*)(gpuSys + gpuMgrOffset);
 
-	if (!gpuMgr) {
-		DbgMsg("[GPU] Failed getting gpuMgr");
-		return false;
-	}
+    if (!gpuMgr) {
+        DbgMsg("[GPU] Failed getting gpuMgr");
+        return 0;  // Corrigido de 'false' para '0' (retorna DWORD64).
+    }
 
-	gpuSys += gpuSysOffset2;
-	DWORD64 gpuDevice{};
+    gpuSys += gpuSysOffset2;
+    DWORD64 gpuDevice = 0;
 
-	while (1) {
-		DWORD32 foundInstance = *(DWORD32*)(gpuSys + 0x8);
+    while (1) {
+        DWORD32 foundInstance = *(DWORD32*)(gpuSys + 0x8);
 
-		if (foundInstance == gpuInstance)
-		{
-			DWORD64 device = *(DWORD64*)gpuSys;
+        if (foundInstance == gpuInstance) {
+            DWORD64 device = *(DWORD64*)gpuSys;
 
-			if (device != 0)
-				gpuDevice = device;
+            if (device != 0)
+                gpuDevice = device;
 
-			break;
-		}
+            break;
+        }
 
-		gpuSys += 0x10;
-	}
+        gpuSys += 0x10;
+    }
 
-	return gpuDevice;
+    return gpuDevice;
 }
 
-DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex)
-{
-	if (*startIndex >= NV_MAX_DEVICES)
-	{
-		DbgMsg("[GPU] Start index too big: %d", *startIndex);
-		return 0;
+DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
+    if (*startIndex >= NV_MAX_DEVICES) {
+        DbgMsg("[GPU] Start index too big: %d", *startIndex);
+        return 0;
+    }
 
-	}
+    for (DWORD32 i = *startIndex; i < NV_MAX_DEVICES; ++i) {
+        if (deviceMask & (1U << i)) {
+            *startIndex = i + 1;
+            return gpuData(i);
+        }
+    }
 
-	for (DWORD32 i = *startIndex; i < NV_MAX_DEVICES; ++i)
-	{
-		if (deviceMask & (1U << i))
-		{
-			*startIndex = i + 1;
-			return gpuData(i);
-		}
-	}
-
-	*startIndex = NV_MAX_DEVICES;
-
-	DbgMsg("[GPU] All devices have been handled");
-	return 0;
+    *startIndex = NV_MAX_DEVICES;
+    DbgMsg("[GPU] All devices have been handled");
+    return 0;
 }
 
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
-bool gpu::Spoof(DWORD64 seed)
-{
+bool gpu::Spoof(DWORD64 seed) {
     rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
     rnd.setSeed(seed);
 
@@ -84,8 +76,7 @@ bool gpu::Spoof(DWORD64 seed)
         (PCHAR)"x????xxxxxxxx????xxx????xxx");
 
     UINT64 AddrOffset = 0x3B;
-    if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8)
-    {
+    if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8) {
         AddrOffset++;
         if (*(UINT8*)(Addr + AddrOffset) != 0xE8) {
             DbgMsg("[GPU] Could not find GpuMgrGetGpuFromId pattern");
@@ -116,11 +107,9 @@ bool gpu::Spoof(DWORD64 seed)
 
     UINT32 UuidValidOffset = 0;
     // Percorrer instruções para encontrar o deslocamento GPU::gpuUuid.isInitialized.
-    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++)
-    {
+    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++) {
         UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
-        if (Opcode == 0x818D4C)
-        {
+        if (Opcode == 0x818D4C) {
             UuidValidOffset = *(UINT32*)(Addr + 3) - 1;
             break;
         }
@@ -128,8 +117,7 @@ bool gpu::Spoof(DWORD64 seed)
         Addr += instruction->length;
     }
 
-    if (!UuidValidOffset)
-    {
+    if (!UuidValidOffset) {
         DbgMsg("[GPU] Failed to find uuid offset");
         return false;
     }
@@ -137,8 +125,7 @@ bool gpu::Spoof(DWORD64 seed)
     static UUID* origGUIDs[32] = { 0 };
 
     int spoofedGPUs = 0;
-    for (int i = 0; i < 32; i++)
-    {
+    for (int i = 0; i < 32; i++) {
         UINT64 ProbedGPU = GpuMgrGetGpuFromId(i);
 
         if (!ProbedGPU) continue;
@@ -168,7 +155,4 @@ bool gpu::Spoof(DWORD64 seed)
     }
 
     return spoofedGPUs > 0;
-}
-
-	return spoofedGPUs > 0;
 }
