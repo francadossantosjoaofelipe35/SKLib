@@ -1,6 +1,7 @@
 #include "gpuspoof.h"
 #include <chrono>
 #include <random>
+#include <iostream>
 
 DWORD64 pGpuSystem = 0;
 DWORD32 gpuSysOffset = 0;
@@ -21,7 +22,7 @@ DWORD64 gpuData(DWORD32 gpuInstance) {
     gpuSys += gpuSysOffset2;
     DWORD64 gpuDevice{};
 
-    while (1) {
+    while (true) {
         DWORD32 foundInstance = *(DWORD32*)(gpuSys + 0x8);
 
         if (foundInstance == gpuInstance) {
@@ -61,7 +62,6 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
 bool gpu::Spoof(DWORD64 seed) {
-    // Use a random seed if none is provided
     if (seed == 0) {
         seed = std::chrono::system_clock::now().time_since_epoch().count();
     }
@@ -70,7 +70,6 @@ bool gpu::Spoof(DWORD64 seed) {
 
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
-        // Can happen if the PC does not have a GPU
         DbgMsg("[GPU] Failed getting NVIDIA driver object");
         return false;
     }
@@ -91,43 +90,36 @@ bool gpu::Spoof(DWORD64 seed) {
     }
 
     ZyanUSize instrLen = 0;
-
-    // Initialize decoder context
-    ZydisDecoder* pDecoder = (ZydisDecoder*)cpp::kMalloc(sizeof(*pDecoder), PAGE_READWRITE);
-    ZyanStatus zstatus = ZydisDecoderInit(pDecoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+    ZydisDecoder decoder;
+    ZyanStatus zstatus = ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
     if (!ZYAN_SUCCESS(zstatus)) {
         DbgMsg("[ZYDIS] Failed creating decoder: 0x%x", zstatus);
         return false;
     }
-    const ZyanUSize length = PAGE_SIZE;
-    ZydisDecodedInstruction* instruction = (ZydisDecodedInstruction*)cpp::kMalloc(sizeof(*instruction), PAGE_READWRITE);
 
-    GpuMgrGetGpuFromId = decltype(GpuMgrGetGpuFromId)(*(int*)(Addr + 1) + 5 + Addr);
+    ZydisDecodedInstruction instruction;
+    GpuMgrGetGpuFromId = reinterpret_cast<UINT64(*)(int)>(*(int*)(Addr + 1) + 5 + Addr);
 
     Addr += AddrOffset;
-
-    // gpuGetGidInfo
     Addr += *(int*)(Addr + 1) + 5;
 
     UINT32 UuidValidOffset = 0;
-    // Walk instructions to find GPU::gpuUuid.isInitialized offset.
-    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++) {
+    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, (ZyanU8*)Addr + instrLen, PAGE_SIZE - instrLen, &instruction)), InstructionCount < 0x50; InstructionCount++) {
         UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
         if (Opcode == 0x818D4C) {
             UuidValidOffset = *(UINT32*)(Addr + 3) - 1;
             break;
         }
 
-        Addr += instruction->length;
+        Addr += instruction.length;
     }
 
-    // Could not find GPU::gpuUuid.isInitialized offset
     if (!UuidValidOffset) {
         DbgMsg("[GPU] Failed to find uuid offset");
         return false;
     }
 
-    static UUID* origGUIDs[32] = { 0 };
+    static UUID* origGUIDs[32] = { nullptr };
 
     int spoofedGPUs = 0;
     for (int i = 0; i < 32; i++) {
@@ -138,7 +130,7 @@ bool gpu::Spoof(DWORD64 seed) {
         if (!*(bool*)(ProbedGPU + UuidValidOffset)) continue;
 
         if (!origGUIDs[i]) {
-            origGUIDs[i] = (UUID*)cpp::kMalloc(sizeof(UUID));
+            origGUIDs[i] = new UUID;
             *origGUIDs[i] = *(UUID*)(ProbedGPU + UuidValidOffset + 1);
         } else {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
