@@ -1,37 +1,56 @@
 #include "RandEx.h"
-#include <string>
-#include <windows.h>  // Para KeQueryTimeIncrement e KeQueryInterruptTime
+#include <ctime>
 
-#pragma warning(disable : 4244)  // Suprimir warning de conversão
+namespace random {
 
-random::Random random::rnd;
+Random rnd;
 
-ULONG random::Random::getRandom() {
+ULONG Random::getRandom() {
     if (_eSecLevel == SecurityLevel::PREDICTABLE) {
         if (_seed == 0) {
-            _seed = 987654321;  // Seed padrão para previsibilidade
+            _seed = 987654321; // Valor inicial padrão
         }
-        _seed = 8253729 * _seed + 2396403; // Algoritmo LCG simples
-    } else {
-        _seed = KeQueryTimeIncrement() ^ (KeQueryInterruptTime() * 8253729);
+        // Geração de número aleatório usando LCG
+        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
+    } 
+    else if (_eSecLevel == SecurityLevel::PSEUDO) {
+        // Simulação de um seed aleatório
+        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
+    } 
+    else {
+        // Sempre atualiza o seed
+        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
     }
     return _seed;
 }
 
-random::Random::Random(SecurityLevel eSecLevel) : _eSecLevel(eSecLevel), _seed(KeQueryTimeIncrement() ^ (KeQueryInterruptTime() * 8253729)), _xorKey(Next(1ull, MAXULONG64)) {}
+Random::Random(SecurityLevel eSecLevl) {
+    _eSecLevel = eSecLevl;
+    if (eSecLevl == SecurityLevel::PREDICTABLE) {
+        _seed = 0;
+    } else {
+        // Inicializa o seed de forma aleatória
+        _seed = static_cast<ULONG>(time(nullptr)); // Usar o tempo atual como seed inicial
+    }
+    _xorKey = this->Next(1ull, MAXULONG64);
+}
 
-random::Random::Random(ULONG seed) : _eSecLevel(SecurityLevel::PREDICTABLE), _seed(seed), _xorKey(Next(1ull, MAXULONG64)) {}
+Random::Random(ULONG seed) {
+    _eSecLevel = SecurityLevel::PREDICTABLE;
+    _seed = seed;
+    _xorKey = this->Next(1ull, MAXULONG64);
+}
 
-void random::Random::setSeed(ULONG seed) {
+void Random::setSeed(ULONG seed) {
     _eSecLevel = SecurityLevel::PREDICTABLE;
     _seed = seed;
 }
 
-void random::Random::setSecLevel(SecurityLevel eSecLevel) {
+void Random::setSecLevel(SecurityLevel eSecLevel) {
     _eSecLevel = eSecLevel;
 }
 
-size_t random::Random::Next(size_t begin, size_t end) {
+size_t Random::Next(size_t begin, size_t end) {
     size_t ret = getRandom();
     ret <<= 32;
     ret |= getRandom();
@@ -41,15 +60,16 @@ size_t random::Random::Next(size_t begin, size_t end) {
     return ret;
 }
 
-int random::Random::Next(int begin, int end) {
-    return static_cast<int>(Next(static_cast<size_t>(begin), static_cast<size_t>(end)));
+int Random::Next(int begin, int end) {
+    return (int)Next((size_t)begin, (size_t)end);
 }
 
-size_t random::Random::NextPredictable(size_t begin, size_t end) {
-    if (end == 0) {
+size_t Random::NextPredictable(size_t begin, size_t end) {
+    if (!end) {
         return 1;
     }
-    size_t ret = begin ^ static_cast<size_t>(_AddressOfReturnAddress());
+    size_t ret = 0;
+    ret = begin ^ (size_t)_AddressOfReturnAddress();
     ret <<= 32;
     ret |= begin ^ _xorKey;
     ret %= end;
@@ -58,64 +78,132 @@ size_t random::Random::NextPredictable(size_t begin, size_t end) {
     return ret;
 }
 
-int random::Random::NextPredictable(int begin, int end) {
-    return static_cast<int>(NextPredictable(static_cast<size_t>(begin), static_cast<size_t>(end)));
+int Random::NextPredictable(int begin, int end) {
+    return (int)NextPredictable((size_t)begin, (size_t)end);
 }
 
-size_t random::Random::XorPredictable(size_t number) {
+size_t Random::XorPredictable(size_t number) {
     if (_xorKey == 0) {
         _xorKey = 987654321;
     }
-    _xorKey = 8253729 * _xorKey + 2396403;
+    _xorKey = (8253729 * _xorKey + 2396403) % ULONG_MAX;
     return number ^ _xorKey;
 }
 
-int random::Random::XorPredictable(int number) {
-    return static_cast<int>(XorPredictable(static_cast<size_t>(number)));
+int Random::XorPredictable(int number) {
+    return (int)XorPredictable((size_t)number);
 }
 
-std::string random::Random::String(size_t sz) {
+string Random::String(size_t sz) {
     char pBuf[RND_STRING_MAX_LEN] = { 0 };
 
     if (sz < RND_STRING_MAX_LEN - 1) {
         c_str(pBuf, sz);
     } else {
-        // Substitua por um log apropriado se necessário
+        DbgMsg("[RANDOM] Warning: attempted to generate %lld characters, current max is %d", sz, RND_STRING_MAX_LEN - 1);
     }
 
-    return std::string(pBuf);
+    return pBuf;
 }
 
-void random::Random::bytes(char* pOut, size_t sz) {
+void Random::bytes(char* pOut, size_t sz) {
     for (size_t n = 0; n < sz; n++) {
-        pOut[n] = static_cast<char>(getRandom());
+        pOut[n] = (char)getRandom();
     }
 }
 
-void random::Random::c_str(char* pOut, size_t sz) {
-    static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+void Random::c_str(char* pOut, size_t sz) {
+    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     for (size_t n = 0; n < sz; n++) {
-        int key = static_cast<int>(getRandom()) % (sizeof(charset) - 1);
+        int key = getRandom() % (sizeof(charset) - 1);
         pOut[n] = charset[key];
     }
-    pOut[sz] = '\0';
+    pOut[sz] = 0;
 }
 
-void random::Random::w_str(wchar_t* pOut, size_t sz) {
-    static const wchar_t charset[] = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+void Random::w_str(wchar_t* pOut, size_t sz) {
+    static wchar_t charset[] = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     for (size_t n = 0; n < sz; n++) {
-        int key = static_cast<int>(getRandom()) % (sizeof(charset) / sizeof(wchar_t) - 1);
+        int key = getRandom() % (sizeof(charset) / 2 - 1);
         pOut[n] = charset[key];
     }
-    pOut[sz] = L'\0';
+    pOut[sz] = 0;
 }
 
-void random::Regenerate(SecurityLevel eSecLevel) {
-    rnd = Random(eSecLevel);
+void Random::c_str_upper(char* pOut, size_t sz) {
+    static char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    for (size_t n = 0; n < sz; n++) {
+        int key = getRandom() % (sizeof(charset) - 1);
+        pOut[n] = charset[key];
+    }
+    pOut[sz] = 0;
 }
 
-size_t random::Next(size_t begin, size_t end) {
+void Random::w_str_upper(wchar_t* pOut, size_t sz) {
+    static wchar_t charset[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    for (size_t n = 0; n < sz; n++) {
+        int key = getRandom() % (sizeof(charset) / 2 - 1);
+        pOut[n] = charset[key];
+    }
+    pOut[sz] = 0;
+}
+
+void Random::c_str_hex(char* pOut, size_t sz) {
+    static char charset[] = "ABCDEF0123456789";
+
+    for (size_t n = 0; n < sz; n++) {
+        int key = getRandom() % (sizeof(charset) - 1);
+        pOut[n] = charset[key];
+    }
+    pOut[sz] = 0;
+}
+
+void Random::w_str_hex(wchar_t* pOut, size_t sz) {
+    static wchar_t charset[] = L"ABCDEF0123456789";
+
+    for (size_t n = 0; n < sz; n++) {
+        int key = getRandom() % (sizeof(charset) / 2 - 1);
+        pOut[n] = charset[key];
+    }
+    pOut[sz] = 0;
+}
+
+void Regenerate(SecurityLevel eSecLevl) {
+    Random r(eSecLevl);
+    rnd = r;
+}
+
+size_t Next(size_t begin, size_t end) {
     return rnd.Next(begin, end);
 }
+
+size_t NextHardware(size_t begin, size_t end) {
+    // Removido: não usa mais hardware
+    ULONG seed = rnd.getRandom();
+    seed %= end;
+    if (seed < begin)
+        seed += begin;
+    return seed;
+}
+
+int Next32(int begin, int end) {
+    return rnd.Next(begin, end);
+}
+
+string String(size_t sz) {
+    return rnd.String(sz);
+}
+
+void c_str(char* pOut, size_t sz) {
+    rnd.c_str(pOut, sz);
+}
+
+void w_str(wchar_t* pOut, size_t sz) {
+    rnd.w_str(pOut, sz);
+}
+
+} // namespace random
