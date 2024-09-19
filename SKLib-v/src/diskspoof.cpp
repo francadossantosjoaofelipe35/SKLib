@@ -41,19 +41,31 @@ vector<WWN*>* vWWNs = nullptr;
 vector<IEEE*>* vIEEEs = nullptr;
 DISK_HOOKS diskHooks = { 0 };
 
+UINT64 generatePseudoRandom() {
+    UINT64 timeValue = __rdtsc();  // Valor baseado no timestamp da CPU
+    UINT64 stackAddress = (UINT64)&timeValue;  // Endereço atual da pilha
+    UINT64 memoryValue = *(UINT64*)stackAddress;  // Valor na memória naquele endereço
+
+    // Combine diferentes bits para gerar um valor mais único
+    return (timeValue ^ (memoryValue << 13) ^ (memoryValue >> 7)) * 31;
+}
+
 bool FindFakeDiskSerial(char* pOriginal, bool bCappedString = true) {
 #ifdef DUMMY_SERIAL
     bool bFound = true;
     RtlCopyMemory(pOriginal, DUMMY_SERIAL, DISK_SERIAL_MAX_LENGTH);
 #else
     bool bFound = false;
-    if (!vDiskSerials
-        || !MmIsAddressValid(pOriginal))
+    if (!vDiskSerials || !MmIsAddressValid(pOriginal)) {
         return false;
+    }
 
-    if (pOriginal[0] == 0)
+    // Se o serial começa com 0, avançar
+    if (pOriginal[0] == 0) {
         pOriginal++;
+    }
 
+    // Verificar se o serial já foi spoofado anteriormente
     for (auto& serial : *vDiskSerials) {
         if (!memcmp(serial.orig, pOriginal, serial.sz)) {
             Memory::WriteProtected(pOriginal, serial.spoofed, serial.sz);
@@ -62,23 +74,36 @@ bool FindFakeDiskSerial(char* pOriginal, bool bCappedString = true) {
         }
     }
 
+    // Caso o serial não tenha sido spoofado antes, criamos um novo spoof
     if (!bFound) {
         DISK_SERIAL_DATA data{ 0 };
-        rnd.setSeed(spoofer::seed);
         int serialLen = DISK_SERIAL_MAX_LENGTH;
+
+        // Ajusta o comprimento do serial
         if (!bCappedString) {
             serialLen = strlen(pOriginal);
         }
+
+        // Alocar memória para o original e spoofed
         data.orig = (char*)cpp::kMallocZero(serialLen + 1, PAGE_READWRITE);
         data.spoofed = (char*)cpp::kMallocZero(serialLen + 1, PAGE_READWRITE);
         data.sz = serialLen;
+
+        // Copiar o serial original
         RtlCopyMemory(data.orig, pOriginal, serialLen);
         RtlCopyMemory(data.spoofed, pOriginal, serialLen);
 
-        rnd.random_shuffle_ignore_chars(data.spoofed + 2, serialLen - 2, (char*)" _-.", 4);
+        // Randomizar o serial, ignorando os primeiros 2 caracteres
+        for (int i = 2; i < serialLen - 2; ++i) {
+            if (strchr(" _-.", data.spoofed[i]) == nullptr) {  // Ignorar caracteres especiais
+                data.spoofed[i] = 'A' + (generatePseudoRandom() % 26);  // Gera letras aleatórias
+            }
+        }
 
+        // Adicionar o novo serial à lista de spoofing
         vDiskSerials->Append(data);
 
+        // Aplicar o serial spoofado na memória
         Memory::WriteProtected(pOriginal + 2, data.spoofed + 2, serialLen - 2);
     }
 #endif
