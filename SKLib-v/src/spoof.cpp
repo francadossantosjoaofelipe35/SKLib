@@ -16,6 +16,16 @@ NTSTATUS spoofer::SpoofAll(DWORD64 _seed)
 		DbgMsg("[SPOOFER] Failed disk");
 		return STATUS_FAILED_DISKS_SPOOF;
 	}
+	bSuccessful &= efi::Spoof(_seed);
+	if (!bSuccessful) {
+		DbgMsg("[SPOOFER] Failed efi");
+		return STATUS_FAILED_EFI_SPOOF;
+	}
+	bSuccessful &= nics::Spoof(_seed);
+	if (!bSuccessful) {
+		DbgMsg("[SPOOFER] Failed nics");
+		return STATUS_FAILED_NICS_SPOOF;
+	}
 	bSuccessful &= usb::Spoof(_seed);
 	if (!bSuccessful) {
 		DbgMsg("[SPOOFER] Failed usb");
