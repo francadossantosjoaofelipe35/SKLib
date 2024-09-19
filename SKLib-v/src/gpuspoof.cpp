@@ -1,7 +1,5 @@
+#include <ctime> // Para obter o tempo atual
 #include "gpuspoof.h"
-#include <chrono>
-#include <random>
-#include <iostream>
 
 DWORD64 pGpuSystem = 0;
 DWORD32 gpuSysOffset = 0;
@@ -16,16 +14,17 @@ DWORD64 gpuData(DWORD32 gpuInstance) {
 
     if (!gpuMgr) {
         DbgMsg("[GPU] Failed getting gpuMgr");
-        return 0;
+        return false;
     }
 
     gpuSys += gpuSysOffset2;
     DWORD64 gpuDevice{};
 
-    while (true) {
+    while (1) {
         DWORD32 foundInstance = *(DWORD32*)(gpuSys + 0x8);
 
-        if (foundInstance == gpuInstance) {
+        if (foundInstance == gpuInstance)
+        {
             DWORD64 device = *(DWORD64*)gpuSys;
 
             if (device != 0)
@@ -40,14 +39,18 @@ DWORD64 gpuData(DWORD32 gpuInstance) {
     return gpuDevice;
 }
 
-DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
-    if (*startIndex >= NV_MAX_DEVICES) {
+DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex)
+{
+    if (*startIndex >= NV_MAX_DEVICES)
+    {
         DbgMsg("[GPU] Start index too big: %d", *startIndex);
         return 0;
     }
 
-    for (DWORD32 i = *startIndex; i < NV_MAX_DEVICES; ++i) {
-        if (deviceMask & (1U << i)) {
+    for (DWORD32 i = *startIndex; i < NV_MAX_DEVICES; ++i)
+    {
+        if (deviceMask & (1U << i))
+        {
             *startIndex = i + 1;
             return gpuData(i);
         }
@@ -61,17 +64,19 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex) {
 
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
-bool gpu::Spoof(DWORD64 seed) {
-    if (seed == 0) {
-        seed = std::chrono::system_clock::now().time_since_epoch().count();
-    }
+bool gpu::Spoof(DWORD64 seed)
+{
+    rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
 
-    std::mt19937_64 rnd(seed);
+    // Gerar um seed baseado no tempo atual
+    DWORD64 dynamicSeed = static_cast<DWORD64>(std::time(nullptr));
+    rnd.setSeed(dynamicSeed);
 
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
+        // Pode ocorrer se o PC não tiver uma GPU
         DbgMsg("[GPU] Failed getting NVIDIA driver object");
-        return false;
+        return true;
     }
 
     BOOLEAN status = FALSE;
@@ -81,7 +86,8 @@ bool gpu::Spoof(DWORD64 seed) {
         (PCHAR)"x????xxxxxxxx????xxx????xxx");
 
     UINT64 AddrOffset = 0x3B;
-    if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8) {
+    if (!Addr || *(UINT8*)(Addr + AddrOffset) != 0xE8)
+    {
         AddrOffset++;
         if (*(UINT8*)(Addr + AddrOffset) != 0xE8) {
             DbgMsg("[GPU] Could not find GpuMgrGetGpuFromId pattern");
@@ -90,62 +96,62 @@ bool gpu::Spoof(DWORD64 seed) {
     }
 
     ZyanUSize instrLen = 0;
-    ZydisDecoder decoder;
-    ZyanStatus zstatus = ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+
+    ZydisDecoder* pDecoder = (ZydisDecoder*)cpp::kMalloc(sizeof(*pDecoder), PAGE_READWRITE);
+    ZyanStatus zstatus = ZydisDecoderInit(pDecoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
     if (!ZYAN_SUCCESS(zstatus)) {
         DbgMsg("[ZYDIS] Failed creating decoder: 0x%x", zstatus);
         return false;
     }
 
-    ZydisDecodedInstruction instruction;
-    GpuMgrGetGpuFromId = reinterpret_cast<UINT64(*)(int)>(*(int*)(Addr + 1) + 5 + Addr);
+    const ZyanUSize length = PAGE_SIZE; 
+    ZydisDecodedInstruction* instruction = (ZydisDecodedInstruction*)cpp::kMalloc(sizeof(*instruction), PAGE_READWRITE);
+
+    GpuMgrGetGpuFromId = decltype(GpuMgrGetGpuFromId)(*(int*)(Addr + 1) + 5 + Addr);
 
     Addr += AddrOffset;
     Addr += *(int*)(Addr + 1) + 5;
 
     UINT32 UuidValidOffset = 0;
-    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, (ZyanU8*)Addr + instrLen, PAGE_SIZE - instrLen, &instruction)), InstructionCount < 0x50; InstructionCount++) {
+    for (int InstructionCount = 0; ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(pDecoder, (ZyanU8*)Addr + instrLen, length - instrLen, instruction)), InstructionCount < 0x50; InstructionCount++)
+    {
         UINT32 Opcode = *(UINT32*)Addr & 0xFFFFFF;
-        if (Opcode == 0x818D4C) {
+        if (Opcode == 0x818D4C)
+        {
             UuidValidOffset = *(UINT32*)(Addr + 3) - 1;
             break;
         }
 
-        Addr += instruction.length;
+        Addr += instruction->length;
     }
 
-    if (!UuidValidOffset) {
+    if (!UuidValidOffset)
+    {
         DbgMsg("[GPU] Failed to find uuid offset");
         return false;
     }
 
-    static UUID* origGUIDs[32] = { nullptr };
+    static UUID* origGUIDs[32] = { 0 };
 
     int spoofedGPUs = 0;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 32; i++)
+    {
         UINT64 ProbedGPU = GpuMgrGetGpuFromId(i);
 
         if (!ProbedGPU) continue;
 
         if (!*(bool*)(ProbedGPU + UuidValidOffset)) continue;
-
+        
         if (!origGUIDs[i]) {
-            origGUIDs[i] = new UUID;
+            origGUIDs[i] = (UUID*)cpp::kMalloc(sizeof(UUID));
             *origGUIDs[i] = *(UUID*)(ProbedGPU + UuidValidOffset + 1);
-        } else {
+        }
+        else {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
-
-        UUID newUUID;
-        newUUID.Data1 = rnd() & 0xFFFFFFFF;
-        newUUID.Data2 = rnd() & 0xFFFF;
-        newUUID.Data3 = rnd() & 0xFFFF;
-        rnd.bytes((char*)newUUID.Data4, 8);
-
+        rnd.setSeed(dynamicSeed); // Atualiza o seed a cada GPU para manter aleatoriedade
         _disable();
-        CPU::DisableWriteProtection();
-        *(UUID*)(ProbedGPU + UuidValidOffset + 1) = newUUID;
-        CPU::EnableWriteProtection();
+        rnd.bytes((char*)(ProbedGPU + UuidValidOffset + 1), sizeof(UUID));
         _enable();
 
         DbgMsg("[GPU] Spoofed GPU %d", i);
