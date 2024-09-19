@@ -1,4 +1,6 @@
-#include <random>  // Biblioteca moderna para geração de números aleatórios
+#include <ctime> // Para obter o tempo atual
+#include <random> // Para gerar uma seed mais robusta
+#include <chrono> // Para trabalhar com o tempo de alta resolução
 #include "gpuspoof.h"
 #pragma warning(disable : 2220)  // Desativa o aviso C2220
 
@@ -8,23 +10,6 @@ DWORD32 gpuMgrOffset = 0;
 DWORD32 gpuSysOffset2 = 0;
 DWORD32 bInitOffset = 0;
 DWORD32 uuidOffset = 0;
-
-// Função para gerar UUID aleatório
-UUID GenerateRandomUUID() {
-    static std::random_device rd;  // Dispositivo para obter uma semente de aleatoriedade
-    static std::mt19937_64 gen(rd());  // Gerador de números aleatórios
-    static std::uniform_int_distribution<uint64_t> dis;  // Distribuição uniforme para uint64_t
-
-    UUID uuid;
-    uint64_t* uuidBytes = reinterpret_cast<uint64_t*>(&uuid);
-    
-    // Preenche o UUID com valores aleatórios
-    for (int i = 0; i < sizeof(UUID) / sizeof(uint64_t); ++i) {
-        uuidBytes[i] = dis(gen);
-    }
-
-    return uuid;
-}
 
 DWORD64 gpuData(DWORD32 gpuInstance) {
     DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
@@ -82,15 +67,28 @@ DWORD64 nextGpu(DWORD32 deviceMask, DWORD32* startIndex)
 
 UINT64 (*GpuMgrGetGpuFromId)(int gpuId);
 
+// Função para gerar uma seed mais robusta
+DWORD64 GenerateSeed() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto timeSinceEpoch = now.time_since_epoch();
+    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(timeSinceEpoch).count();
+    std::random_device rd;
+    std::mt19937_64 rng(rd());
+    std::uniform_int_distribution<DWORD64> dist(0, nanoseconds);
+    return dist(rng);
+}
+
 bool gpu::Spoof(DWORD64 seed)
 {
     rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
 
-    // Gerar UUID aleatório
-    UUID randomUUID = GenerateRandomUUID();
+    // Gerar uma seed baseada em múltiplas fontes de entropia
+    DWORD64 dynamicSeed = GenerateSeed();
+    rnd.setSeed(dynamicSeed);
 
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
+        // Pode ocorrer se o PC não tiver uma GPU
         DbgMsg("[GPU] Failed getting NVIDIA driver object");
         return true;
     }
@@ -165,9 +163,9 @@ bool gpu::Spoof(DWORD64 seed)
         else {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
-        rnd.setSeed(seed); // Atualiza o seed a cada GPU para manter aleatoriedade
+        rnd.setSeed(dynamicSeed); // Atualiza o seed a cada GPU para manter aleatoriedade
         _disable();
-        *(UUID*)(ProbedGPU + UuidValidOffset + 1) = randomUUID;
+        rnd.bytes((char*)(ProbedGPU + UuidValidOffset + 1), sizeof(UUID));
         _enable();
 
         DbgMsg("[GPU] Spoofed GPU %d", i);
