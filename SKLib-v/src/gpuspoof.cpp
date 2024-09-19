@@ -1,4 +1,4 @@
-#include <ctime> // Para obter o tempo atual
+#include <random>  // Biblioteca moderna para geração de números aleatórios
 #include "gpuspoof.h"
 #pragma warning(disable : 2220)  // Desativa o aviso C2220
 
@@ -8,6 +8,23 @@ DWORD32 gpuMgrOffset = 0;
 DWORD32 gpuSysOffset2 = 0;
 DWORD32 bInitOffset = 0;
 DWORD32 uuidOffset = 0;
+
+// Função para gerar UUID aleatório
+UUID GenerateRandomUUID() {
+    static std::random_device rd;  // Dispositivo para obter uma semente de aleatoriedade
+    static std::mt19937_64 gen(rd());  // Gerador de números aleatórios
+    static std::uniform_int_distribution<uint64_t> dis;  // Distribuição uniforme para uint64_t
+
+    UUID uuid;
+    uint64_t* uuidBytes = reinterpret_cast<uint64_t*>(&uuid);
+    
+    // Preenche o UUID com valores aleatórios
+    for (int i = 0; i < sizeof(UUID) / sizeof(uint64_t); ++i) {
+        uuidBytes[i] = dis(gen);
+    }
+
+    return uuid;
+}
 
 DWORD64 gpuData(DWORD32 gpuInstance) {
     DWORD64 gpuSys = *(DWORD64*)(pGpuSystem + gpuSysOffset);
@@ -69,13 +86,11 @@ bool gpu::Spoof(DWORD64 seed)
 {
     rnd.setSecLevel(random::SecurityLevel::PREDICTABLE);
 
-    // Gerar um seed baseado no tempo atual
-    DWORD64 dynamicSeed = static_cast<DWORD64>(std::time(nullptr));
-    rnd.setSeed(dynamicSeed);
+    // Gerar UUID aleatório
+    UUID randomUUID = GenerateRandomUUID();
 
     PVOID pBase = Memory::GetKernelAddress((PCHAR)"nvlddmkm.sys");
     if (!pBase) {
-        // Pode ocorrer se o PC não tiver uma GPU
         DbgMsg("[GPU] Failed getting NVIDIA driver object");
         return true;
     }
@@ -150,9 +165,9 @@ bool gpu::Spoof(DWORD64 seed)
         else {
             *(UUID*)(ProbedGPU + UuidValidOffset + 1) = *origGUIDs[i];
         }
-        rnd.setSeed(dynamicSeed); // Atualiza o seed a cada GPU para manter aleatoriedade
+        rnd.setSeed(seed); // Atualiza o seed a cada GPU para manter aleatoriedade
         _disable();
-        rnd.bytes((char*)(ProbedGPU + UuidValidOffset + 1), sizeof(UUID));
+        *(UUID*)(ProbedGPU + UuidValidOffset + 1) = randomUUID;
         _enable();
 
         DbgMsg("[GPU] Spoofed GPU %d", i);
