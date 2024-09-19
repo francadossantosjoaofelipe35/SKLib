@@ -41,7 +41,7 @@ vector<WWN*>* vWWNs = nullptr;
 vector<IEEE*>* vIEEEs = nullptr;
 DISK_HOOKS diskHooks = { 0 };
 
-UINT64 generatePseudoRandom() {
+UINT64 generatePseudoRandoom() {
     UINT64 timeValue = __rdtsc();  // Valor baseado no timestamp da CPU
     UINT64 stackAddress = (UINT64)&timeValue;  // Endereço atual da pilha
     UINT64 memoryValue = *(UINT64*)stackAddress;  // Valor na memória naquele endereço
@@ -96,7 +96,7 @@ bool FindFakeDiskSerial(char* pOriginal, bool bCappedString = true) {
         // Randomizar o serial, ignorando os primeiros 2 caracteres
         for (int i = 2; i < serialLen - 2; ++i) {
             if (strchr(" _-.", data.spoofed[i]) == nullptr) {  // Ignorar caracteres especiais
-                data.spoofed[i] = 'A' + (generatePseudoRandom() % 26);  // Gera letras aleatórias
+                data.spoofed[i] = 'A' + (generatePseudoRandoom() % 26);  // Gera letras aleatórias
             }
         }
 
