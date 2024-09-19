@@ -3,6 +3,7 @@
 #include "cpp.h"
 #include "gpuspoof.h"
 #include "wmispoof.h"
+#include "diskspoof.h"
 #include "usbspoof.h"
 
 // Namespace para as funções de spoofing
