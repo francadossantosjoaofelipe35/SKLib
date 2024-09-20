@@ -125,7 +125,6 @@
   <ItemGroup>
     <ClInclude Include="include\ddma.h" />
     <ClInclude Include="include\diskspoof.h" />
-    <ClCompile Include="src\efispoof.cpp" />
     <ClInclude Include="include\EPT.h" />
     <ClInclude Include="include\event.h" />
     <ClInclude Include="include\gpuspoof.h" />
@@ -154,7 +153,6 @@
   <ItemGroup>
     <ClCompile Include="src\ddma.cpp" />
     <ClCompile Include="src\diskspoof.cpp" />
-    <ClCompile Include="src\efispoof.cpp" />
     <ClCompile Include="src\EPT.cpp" />
     <ClCompile Include="src\event.cpp" />
     <ClCompile Include="src\exception.cpp" />
