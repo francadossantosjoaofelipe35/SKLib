@@ -11,16 +11,6 @@ NTSTATUS spoofer::SpoofAll(DWORD64 _seed)
 		DbgMsg("[SPOOFER] Failed monitors");
 		return STATUS_FAILED_MONITOR_SPOOF;
 	}
-	bSuccessful &= nics::Spoof(_seed);
-	if (!bSuccessful) {
-		DbgMsg("[SPOOFER] Failed nics");
-		return STATUS_FAILED_NICS_SPOOF;
-	}
-	bSuccessful &= usb::Spoof(_seed);
-	if (!bSuccessful) {
-		DbgMsg("[SPOOFER] Failed usb");
-		return STATUS_FAILED_USB_SPOOF;
-	}
 	bSuccessful &= gpu::Spoof(_seed);
 	if (!bSuccessful) {
 		DbgMsg("[SPOOFER] Failed gpu");
