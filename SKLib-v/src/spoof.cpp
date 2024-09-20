@@ -11,11 +11,6 @@ NTSTATUS spoofer::SpoofAll(DWORD64 _seed)
 		DbgMsg("[SPOOFER] Failed monitors");
 		return STATUS_FAILED_MONITOR_SPOOF;
 	}
-	bSuccessful &= disks::Spoof(_seed);
-	if (!bSuccessful) {
-		DbgMsg("[SPOOFER] Failed disk");
-		return STATUS_FAILED_DISKS_SPOOF;
-	}
 	bSuccessful &= nics::Spoof(_seed);
 	if (!bSuccessful) {
 		DbgMsg("[SPOOFER] Failed nics");
