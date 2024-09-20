@@ -133,7 +133,6 @@
     <ClInclude Include="include\spoof.h" />
     <ClInclude Include="include\umspoof.hpp" />
     <ClInclude Include="include\umutils.hpp" />
-    <ClInclude Include="include\usbspoof.h" />
     <ClInclude Include="include\vdm.hpp" />
     <ClInclude Include="include\Vmcall.h" />
     <ClInclude Include="include\VMCSCheck.h" />
