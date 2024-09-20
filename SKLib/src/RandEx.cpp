@@ -16,7 +16,7 @@ Random::Random(SecurityLevel eSecLevel) {
     if (_eSecLevel == SecurityLevel::PREDICTABLE) {
         _seed = 987654321;  // Seed fixo para previsibilidade
     } else {
-        _seed = (ULONG)(__rdtsc() ^ (ULONG)&_seed);  // Seed inicial baseado em timestamp e endereço de memória
+        _seed = (ULONG)(__rdtsc() ^ (ULONG_PTR)&_seed);  // Use ULONG_PTR para evitar truncamento
     }
 
     _xorKey = this->Next(1ull, MAXULONG64);
