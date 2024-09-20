@@ -5,30 +5,18 @@ namespace random {
 Random rnd;
 
 ULONG Random::getRandom() {
-    if (_eSecLevel == SecurityLevel::PREDICTABLE) {
-        if (_seed == 0) {
-            _seed = 987654321; // Valor inicial padrão
-        }
-        _seed = (8253729 * _seed + 2396403) % ULONG_MAX; // Geração de número aleatório
-    } else if (_eSecLevel == SecurityLevel::PSEUDO) {
-        // Simulação de um seed aleatório
-        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
-    } else {
-        // Geração de número aleatório de alta segurança
-        _seed = (8253729 * _seed + 2396403) % ULONG_MAX;
-    }
+    // Geração de número pseudo-aleatório baseada em uma fórmula mais robusta
+    _seed = (_seed * 1664525 + 1013904223) % ULONG_MAX;
     return _seed;
 }
 
-Random::Random(SecurityLevel eSecLevl) {
-    _eSecLevel = eSecLevl;
+Random::Random(SecurityLevel eSecLevel) {
+    _eSecLevel = eSecLevel;
 
-    // Inicializa o seed de forma aleatória sem usar tempo ou bibliotecas externas
-    if (eSecLevl == SecurityLevel::PREDICTABLE) {
-        _seed = 0; // Padrão
+    if (_eSecLevel == SecurityLevel::PREDICTABLE) {
+        _seed = 987654321;  // Seed fixo para previsibilidade
     } else {
-        // Gerar um seed com base em um valor fixo ou estado conhecido
-        _seed = 987654321; // Usar um valor fixo para a inicialização
+        _seed = (ULONG)(__rdtsc() ^ (ULONG)&_seed);  // Seed inicial baseado em timestamp e endereço de memória
     }
 
     _xorKey = this->Next(1ull, MAXULONG64);
@@ -41,7 +29,6 @@ Random::Random(ULONG seed) {
 }
 
 void Random::setSeed(ULONG seed) {
-    _eSecLevel = SecurityLevel::PREDICTABLE;
     _seed = seed;
 }
 
@@ -51,46 +38,48 @@ void Random::setSecLevel(SecurityLevel eSecLevel) {
 
 size_t Random::Next(size_t begin, size_t end) {
     size_t ret = getRandom();
-    ret <<= 32;
+    ret <<= 32; 
     ret |= getRandom();
     ret %= end;
-    if (ret < begin)
+
+    if (ret < begin) {
         ret += begin;
+    }
+
     return ret;
 }
 
 int Random::Next(int begin, int end) {
-    return (int)Next((size_t)begin, (size_t)end);
+    return static_cast<int>(Next(static_cast<size_t>(begin), static_cast<size_t>(end)));
 }
 
 size_t Random::NextPredictable(size_t begin, size_t end) {
-    if (!end) {
-        return 1;
-    }
-    size_t ret = 0;
-    ret = begin ^ (size_t)_AddressOfReturnAddress(); // Usando um valor fixo ou retorno
+    size_t ret = (begin ^ (size_t)_AddressOfReturnAddress());
     ret <<= 32;
     ret |= begin ^ _xorKey;
     ret %= end;
-    if (ret < begin)
+
+    if (ret < begin) {
         ret += begin;
+    }
+
     return ret;
 }
 
 int Random::NextPredictable(int begin, int end) {
-    return (int)NextPredictable((size_t)begin, (size_t)end);
+    return static_cast<int>(NextPredictable(static_cast<size_t>(begin), static_cast<size_t>(end)));
 }
 
 size_t Random::XorPredictable(size_t number) {
     if (_xorKey == 0) {
-        _xorKey = 987654321; // Valor inicial fixo
+        _xorKey = 987654321;  // Valor fixo inicial para XOR
     }
-    _xorKey = (8253729 * _xorKey + 2396403) % ULONG_MAX;
+    _xorKey = (_xorKey * 1664525 + 1013904223) % ULONG_MAX;  // Atualizando XOR key
     return number ^ _xorKey;
 }
 
 int Random::XorPredictable(int number) {
-    return (int)XorPredictable((size_t)number);
+    return static_cast<int>(XorPredictable(static_cast<size_t>(number)));
 }
 
 string Random::String(size_t sz) {
@@ -106,15 +95,15 @@ string Random::String(size_t sz) {
 }
 
 void Random::bytes(char* pOut, size_t sz) {
-    for (size_t n = 0; n < sz; n++) {
-        pOut[n] = (char)getRandom();
+    for (size_t n = 0; n < sz; ++n) {
+        pOut[n] = static_cast<char>(getRandom());
     }
 }
 
 void Random::c_str(char* pOut, size_t sz) {
-    static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) - 1);
         pOut[n] = charset[key];
     }
@@ -122,9 +111,9 @@ void Random::c_str(char* pOut, size_t sz) {
 }
 
 void Random::w_str(wchar_t* pOut, size_t sz) {
-    static wchar_t charset[] = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const wchar_t charset[] = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
@@ -132,9 +121,9 @@ void Random::w_str(wchar_t* pOut, size_t sz) {
 }
 
 void Random::c_str_upper(char* pOut, size_t sz) {
-    static char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) - 1);
         pOut[n] = charset[key];
     }
@@ -142,9 +131,9 @@ void Random::c_str_upper(char* pOut, size_t sz) {
 }
 
 void Random::w_str_upper(wchar_t* pOut, size_t sz) {
-    static wchar_t charset[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static const wchar_t charset[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
@@ -152,9 +141,9 @@ void Random::w_str_upper(wchar_t* pOut, size_t sz) {
 }
 
 void Random::c_str_hex(char* pOut, size_t sz) {
-    static char charset[] = "ABCDEF0123456789";
+    static const char charset[] = "ABCDEF0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) - 1);
         pOut[n] = charset[key];
     }
@@ -162,9 +151,9 @@ void Random::c_str_hex(char* pOut, size_t sz) {
 }
 
 void Random::w_str_hex(wchar_t* pOut, size_t sz) {
-    static wchar_t charset[] = L"ABCDEF0123456789";
+    static const wchar_t charset[] = L"ABCDEF0123456789";
 
-    for (size_t n = 0; n < sz; n++) {
+    for (size_t n = 0; n < sz; ++n) {
         int key = getRandom() % (sizeof(charset) / sizeof(wchar_t) - 1);
         pOut[n] = charset[key];
     }
